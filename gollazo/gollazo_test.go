@@ -5,92 +5,6 @@ import (
 	"testing"
 )
 
-func TestIsCollazoCipher(t *testing.T) {
-	type args struct {
-		cipher string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		// TODO: Add test cases.
-		{
-			name: "Check given example from programming challenge",
-			args: args{"84581248O6096095854123337"},
-			want: true,
-		},
-		{
-			name: "Check given example from programming challenge with missing first character",
-			args: args{"4581248O6096095854123337"},
-			want: false,
-		},
-		{
-			name: "One digit U toy example",
-			args: args{"8743O2396854126543216"},
-			want: true,
-		},
-		{
-			name: "Two digit U toy example",
-			args: args{"11223344556677881110111213777777777777713"},
-			want: true,
-		},
-		{
-			name: "One digit U toy example invalid triplet",
-			args: args{"11O2334455667777776"},
-			want: false,
-		},
-		{
-			name: "Two digit U toy example invalid triplet",
-			args: args{"1122334455667788991011777777777777713"},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := IsCollazoCipher(tt.args.cipher); got != tt.want {
-				t.Errorf("IsCollazoCipher() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_extractAB(t *testing.T) {
-	type args struct {
-		cipher string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    string
-		want1   string
-		wantErr bool
-	}{
-		{
-			name:    "Check given example from programming challenge",
-			args:    args{"84581248O6096095854123337"},
-			want:    "5412333",
-			want1:   "84581248O60960958",
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := extractAB(tt.args.cipher)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("extractAB() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("extractAB() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("extractAB() got1 = %v, want %v", got1, tt.want1)
-			}
-		})
-	}
-}
-
 func Test_splitAtoIntArray(t *testing.T) {
 	type args struct {
 		A string
@@ -160,6 +74,86 @@ func Test_translateAB2Roman(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := translateAB2Roman(tt.args.num_numerals, tt.args.sum_decimal, tt.args.private_key); got != tt.want {
 				t.Errorf("translateAB2Roman() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCheckCipher(t *testing.T) {
+	type args struct {
+		cipher string
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  bool
+		want1 int
+		want2 string
+		want3 string
+	}{
+		{
+			name:  "Check given example from programming challenge",
+			args:  args{"84581248O6096095854123337"},
+			want:  true,
+			want1: 7,
+			want2: "5412333",
+			want3: "84581248O60960958",
+		},
+		{
+			name:  "Check given example from programming challenge with missing first character",
+			args:  args{"4581248O6096095854123337"},
+			want:  false,
+			want1: -1,
+			want2: " ",
+			want3: " ",
+		},
+		{
+			name:  "One digit U toy example",
+			args:  args{"8743O2396854126543216"},
+			want:  true,
+			want1: 6,
+			want2: "654321",
+			want3: "8743O239685412",
+		},
+		{
+			name:  "Two digit U toy example",
+			args:  args{"11223344556677881110111213777777777777713"},
+			want:  true,
+			want1: 13,
+			want2: "7777777777777",
+			want3: "11223344556677881110111213",
+		},
+		{
+			name:  "One digit U toy example invalid triplet",
+			args:  args{"11O2334455667777776"},
+			want:  false,
+			want1: -1,
+			want2: " ",
+			want3: " ",
+		},
+		{
+			name:  "Two digit U toy example invalid triplet",
+			args:  args{"1122334455667788991011777777777777713"},
+			want:  false,
+			want1: -1,
+			want2: " ",
+			want3: " ",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, got2, got3 := CheckCipher(tt.args.cipher)
+			if got != tt.want {
+				t.Errorf("CheckCipher() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("CheckCipher() got1 = %v, want %v", got1, tt.want1)
+			}
+			if got2 != tt.want2 {
+				t.Errorf("CheckCipher() got2 = %v, want %v", got2, tt.want2)
+			}
+			if got3 != tt.want3 {
+				t.Errorf("CheckCipher() got3 = %v, want %v", got3, tt.want3)
 			}
 		})
 	}

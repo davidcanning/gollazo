@@ -12,8 +12,8 @@ func main() {
 	private_key := []int{24, 22, 12}
 
 	// check a cipher
-	result := gollazo.IsCollazoCipher("11223344556677881110111213777777777777713")
-	fmt.Println("Result = ", result)
+	isCollazo, num, A, B := gollazo.CheckCipher("11223344556677881110111213777777777777713")
+	fmt.Printf("Collazo?: %t\tU = %d\tA = %s\tB = %s\n", isCollazo, num, A, B)
 
 	// decrypt
 	test0_plain, _ := gollazo.Decrypt("84581248O6096095854123337", private_key)

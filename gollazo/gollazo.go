@@ -1,9 +1,6 @@
 package gollazo
 
 import (
-	"errors"
-	"fmt"
-	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -52,22 +49,9 @@ var str_of_digits string = "012345678" // note 9 is excluded as it is used for s
 // The function will use the length of the key to map to roman numerals.
 func Decrypt(cipher string, private_key []int) (string, error) {
 
-	// first check if passed cipher is consistent with
-	// the rules of the cryptosystem.
-	if !IsCollazoCipher(cipher) {
-		return " ", errors.New("Decrypt: Passed string is not a valid Collazo cipher")
-	}
+	//plaintext := convertAB2Plain(A, B, private_key)
 
-	// identify the seperate data strings within cipher
-	A, B, err := extractAB(cipher)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("A = %s\nB = %s \n", A, B)
-
-	plaintext := convertAB2Plain(A, B, private_key)
-
-	return plaintext, nil
+	return " ", nil
 }
 
 // Encrypt takes a plain text string (plaintext) and a private key (array of integers) and produces
@@ -83,10 +67,10 @@ func Encrypt(plaintext string, private_key []int) string {
 	return "Encrypt Return"
 }
 
-// IsCollazoCipher checks whether a passed cipher is consistent with the rules
+// CheckCipher checks whether a passed cipher is consistent with the rules
 // of the Collazo cipher. It checks whether there is any configuration of the final
 // digits (U) which produces A and B with length U.
-func IsCollazoCipher(cipher string) bool {
+func CheckCipher(cipher string) (bool, int, string, string) {
 
 	l_c := len(cipher)
 
@@ -113,10 +97,12 @@ func IsCollazoCipher(cipher string) bool {
 		// required (i.e. 3 times the lower power). This assumes U
 		// never has any leading zeroes (i.e "03" to mean "3")
 		if l_c-l_u <= 3*int(math.Pow10(l_u-1)) {
-			return false
+			return false, -1, " ", " "
 		}
 
-		// using this value of U, extract B and its length
+		// using this value of U, extract A and B
+		// also store length of B for use later in this function.
+		A := cipher[l_c-l_u-U : l_c-l_u]
 		B := cipher[:l_c-l_u-U]
 		l_b := len(B)
 
@@ -137,7 +123,7 @@ func IsCollazoCipher(cipher string) bool {
 			// if we have got this far then the B string
 			// is consistent with a Collazo cipher
 			if i == l_b {
-				return true
+				return true, U, A, B
 			}
 
 			if (string(B[i]) == "O") || (string(B[i]) == "9") {
@@ -159,18 +145,6 @@ func IsCollazoCipher(cipher string) bool {
 
 	}
 
-}
-
-// extract AB takes a cipher encrypted via the Collazo cryptosystem and returns two strings
-// containing A, the number of Roman numerals in the Private Key whose decimal values form
-// the corresponding value (i.e. same index) in the B array
-// Note that the length of these arrays corresponds to the length of the encoded message.
-func extractAB(cipher string) (string, string, error) {
-
-	A := "5412333"
-	B := "84581248O60960958"
-
-	return A, B, nil
 }
 
 func convertAB2Plain(A string, B string, private_key []int) string {
