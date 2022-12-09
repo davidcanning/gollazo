@@ -25,6 +25,26 @@ func TestIsCollazoCipher(t *testing.T) {
 			args: args{"4581248O6096095854123337"},
 			want: false,
 		},
+		{
+			name: "One digit U toy example",
+			args: args{"8743O2396854126543216"},
+			want: true,
+		},
+		{
+			name: "Two digit U toy example",
+			args: args{"11223344556677881110111213777777777777713"},
+			want: true,
+		},
+		{
+			name: "One digit U toy example invalid triplet",
+			args: args{"11O2334455667777776"},
+			want: false,
+		},
+		{
+			name: "Two digit U toy example invalid triplet",
+			args: args{"1122334455667788991011777777777777713"},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

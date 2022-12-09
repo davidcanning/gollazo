@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
+	"strconv"
+	"strings"
 )
 
 // using map literals
@@ -36,6 +39,8 @@ var roman_2_letter = map[string]string{
 	"XXVI":  "Z",
 }
 
+var str_of_digits string = "012345678" // note 9 is excluded as it is used for something else
+
 // Decrypt takes an encoded cipher (string) and the private key (array of integers) and produces
 // the plain text equivalent using the Collazo cryptosystem.
 //
@@ -45,18 +50,24 @@ var roman_2_letter = map[string]string{
 // private_key[0] := 12  (I)
 //
 // The function will use the length of the key to map to roman numerals.
-func Decrypt(cipher string, private_key []int) string {
+func Decrypt(cipher string, private_key []int) (string, error) {
+
+	// first check if passed cipher is consistent with
+	// the rules of the cryptosystem.
+	if !IsCollazoCipher(cipher) {
+		return " ", errors.New("Decrypt: Passed string is not a valid Collazo cipher")
+	}
 
 	// identify the seperate data strings within cipher
 	A, B, err := extractAB(cipher)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("A = %v\nB = %v \n", A, B)
+	fmt.Printf("A = %s\nB = %s \n", A, B)
 
 	plaintext := convertAB2Plain(A, B, private_key)
 
-	return plaintext
+	return plaintext, nil
 }
 
 // Encrypt takes a plain text string (plaintext) and a private key (array of integers) and produces
@@ -72,8 +83,82 @@ func Encrypt(plaintext string, private_key []int) string {
 	return "Encrypt Return"
 }
 
+// IsCollazoCipher checks whether a passed cipher is consistent with the rules
+// of the Collazo cipher. It checks whether there is any configuration of the final
+// digits (U) which produces A and B with length U.
 func IsCollazoCipher(cipher string) bool {
-	return true
+
+	l_c := len(cipher)
+
+	// there is no rule on the length of U
+	// Check over all possible lengths of U, l_u.
+	l_u := 1
+	for {
+		// define U assuming it has l_u digits
+		U_str := cipher[len(cipher)-l_u:]
+
+		// if leading digit is 0, this cannot be valid
+		// for this l_u (but could be as part of a longer U,
+		// so don't return yet)
+		if U_str[0:1] == "0" {
+			l_u++
+			continue
+		}
+
+		// cast U, with length l_u, to integer
+		U, _ := strconv.Atoi(U_str)
+
+		// return false if number of bytes in the cipher subtract
+		// number of bytes in U is less than the minimum length
+		// required (i.e. 3 times the lower power). This assumes U
+		// never has any leading zeroes (i.e "03" to mean "3")
+		if l_c-l_u <= 3*int(math.Pow10(l_u-1)) {
+			return false
+		}
+
+		// using this value of U, extract B and its length
+		B := cipher[:l_c-l_u-U]
+		l_b := len(B)
+
+		// check that that total length of B is consistent with
+		// number of triplets and doublets
+		num_triplets := strings.Count(B, "O") + strings.Count(B, "9")
+		num_doublets := (len(B) - 3*num_triplets) / 2
+		if ((l_b-3*num_triplets)%2 != 0) || (num_triplets+num_doublets) != U {
+			l_u++
+			continue
+		}
+
+		// check that every triplet indicator ("O" or "9") has two
+		// non-triplet indicators after it
+		i := 0
+		for {
+
+			// if we have got this far then the B string
+			// is consistent with a Collazo cipher
+			if i == l_b {
+				return true
+			}
+
+			if (string(B[i]) == "O") || (string(B[i]) == "9") {
+				if !(strings.Contains(str_of_digits, string(B[i+1])) && strings.Contains(str_of_digits, string(B[i+2]))) {
+					l_u++
+					break
+				} else {
+					i += 3
+					continue
+				}
+			} else if !(strings.Contains(str_of_digits, string(B[i])) && strings.Contains(str_of_digits, string(B[i+1]))) {
+				l_u++
+				break
+			} else {
+				i += 2
+			}
+
+		}
+
+	}
+
 }
 
 // extract AB takes a cipher encrypted via the Collazo cryptosystem and returns two strings
@@ -81,10 +166,6 @@ func IsCollazoCipher(cipher string) bool {
 // the corresponding value (i.e. same index) in the B array
 // Note that the length of these arrays corresponds to the length of the encoded message.
 func extractAB(cipher string) (string, string, error) {
-
-	if !IsCollazoCipher(cipher) {
-		return "", "", errors.New("extractAB: Passed string is not a valid Collazo cipher")
-	}
 
 	A := "5412333"
 	B := "84581248O60960958"
