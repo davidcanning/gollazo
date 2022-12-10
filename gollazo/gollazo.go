@@ -1,6 +1,8 @@
 package gollazo
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -36,7 +38,8 @@ var roman_2_letter = map[string]string{
 	"XXVI":  "Z",
 }
 
-var str_of_digits string = "012345678" // note 9 is excluded as it is used for something else
+var str_of_valid_digits string = "012345678"  // note 9 is excluded as it indicates higher Roman numeral value
+var str_of_valid_bytes string = "0123456789O" // the full set of allowed bytes
 
 // Decrypt takes an encoded cipher (string) and the private key (array of integers) and produces
 // the plain text equivalent using the Collazo cryptosystem.
@@ -49,7 +52,19 @@ var str_of_digits string = "012345678" // note 9 is excluded as it is used for s
 // The function will use the length of the key to map to roman numerals.
 func Decrypt(cipher string, private_key []int) (string, error) {
 
-	//plaintext := convertAB2Plain(A, B, private_key)
+	U, A, B, err := CheckCipher(cipher)
+	if err != nil {
+		return " ", err
+	}
+
+	A_arr, err := splitAtoIntArray(A)
+	if err != nil {
+		return " ", err
+	}
+
+	B_arr, err := splitBtoStrArray(B)
+
+	fmt.Printf("%d\t%v\t%v\n", U, A_arr, B_arr)
 
 	return " ", nil
 }
@@ -70,9 +85,16 @@ func Encrypt(plaintext string, private_key []int) string {
 // CheckCipher checks whether a passed cipher is consistent with the rules
 // of the Collazo cipher. It checks whether there is any configuration of the final
 // digits (U) which produces A and B with length U.
-func CheckCipher(cipher string) (bool, int, string, string) {
+func CheckCipher(cipher string) (int, string, string, error) {
 
 	l_c := len(cipher)
+
+	// first check that there are no wrong characters
+	for i := 0; i < l_c; i++ {
+		if !strings.Contains(str_of_valid_bytes, cipher[i:i+1]) {
+			return -1, " ", " ", errors.New("gollazo.CheckCipher: Not a Collazo cipher. Contains at least one invalid character")
+		}
+	}
 
 	// there is no rule on the length of U
 	// Check over all possible lengths of U, l_u.
@@ -84,6 +106,8 @@ func CheckCipher(cipher string) (bool, int, string, string) {
 		// if leading digit is 0, this cannot be valid
 		// for this l_u (but could be as part of a longer U,
 		// so don't return yet)
+		//
+		// Also if there
 		if U_str[0:1] == "0" {
 			l_u++
 			continue
@@ -97,7 +121,7 @@ func CheckCipher(cipher string) (bool, int, string, string) {
 		// required (i.e. 3 times the lower power). This assumes U
 		// never has any leading zeroes (i.e "03" to mean "3")
 		if l_c-l_u <= 3*int(math.Pow10(l_u-1)) {
-			return false, -1, " ", " "
+			return -1, " ", " ", errors.New("gollazo.CheckCipher: Not a Collazo cipher. No possible U")
 		}
 
 		// using this value of U, extract A and B
@@ -123,18 +147,22 @@ func CheckCipher(cipher string) (bool, int, string, string) {
 			// if we have got this far then the B string
 			// is consistent with a Collazo cipher
 			if i == l_b {
-				return true, U, A, B
+				// check that the A array only contains integers
+				if strings.Contains(A, "O") {
+					return -1, " ", " ", errors.New("gollazo.Decrypt: Not a Collazo cipher. A contains 9 or O")
+				}
+				return U, A, B, nil
 			}
 
 			if (string(B[i]) == "O") || (string(B[i]) == "9") {
-				if !(strings.Contains(str_of_digits, string(B[i+1])) && strings.Contains(str_of_digits, string(B[i+2]))) {
+				if !(strings.Contains(str_of_valid_digits, string(B[i+1])) && strings.Contains(str_of_valid_digits, string(B[i+2]))) {
 					l_u++
 					break
 				} else {
 					i += 3
 					continue
 				}
-			} else if !(strings.Contains(str_of_digits, string(B[i])) && strings.Contains(str_of_digits, string(B[i+1]))) {
+			} else if !(strings.Contains(str_of_valid_digits, string(B[i])) && strings.Contains(str_of_valid_digits, string(B[i+1]))) {
 				l_u++
 				break
 			} else {
@@ -147,6 +175,29 @@ func CheckCipher(cipher string) (bool, int, string, string) {
 
 }
 
+// splitAtoIntArray
+func splitAtoIntArray(A string) ([]int, error) {
+	var A_arr []int
+	var A_int int
+	var err error
+
+	for i := 0; i < len(A); i++ {
+		A_int, err = strconv.Atoi(A[i : i+1])
+		A_arr = append(A_arr, A_int)
+		if err != nil {
+			return []int{}, errors.New("gollazo.Decrypt: Not a Collazo cipher. A contains non-integer")
+		}
+	}
+
+	return A_arr, nil
+}
+
+func splitBtoStrArray(B string) ([]string, error) {
+	B_split := []string{"84", "58", "12", "48", "O60", "960", "958"}
+	return B_split, nil
+}
+
+/*
 func convertAB2Plain(A string, B string, private_key []int) string {
 
 	// split the strings up into arrays
@@ -167,16 +218,7 @@ func convertAB2Plain(A string, B string, private_key []int) string {
 	return plaintext
 }
 
-func splitAtoIntArray(A string) []int {
-	A_split := []int{5, 4, 1, 2, 3, 3, 3}
-	return A_split
-}
-
-func splitBtoStrArray(B string) []string {
-	B_split := []string{"84", "58", "12", "48", "O60", "960", "958"}
-	return B_split
-}
-
 func translateAB2Roman(num_numerals int, sum_decimal string, private_key []int) string {
 	return "XXIII"
 }
+*/

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/davidcanning/gollazo/gollazo"
 )
@@ -12,13 +13,17 @@ func main() {
 	private_key := []int{24, 22, 12}
 
 	// check a cipher
-	isCollazo, num, A, B := gollazo.CheckCipher("11223344556677881110111213777777777777713")
-	fmt.Printf("Collazo?: %t\tU = %d\tA = %s\tB = %s\n", isCollazo, num, A, B)
+	num, A, B, err := gollazo.CheckCipher("84581248O6096095854123337")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("U = %d\tA = %s\tB = %s\terr = %v\n", num, A, B, err)
 
 	// decrypt
-	test0_plain, _ := gollazo.Decrypt("84581248O6096095854123337", private_key)
-	fmt.Printf("Cipher: %s -> Plaintext: %s.\n", "84581248O6096095854123337", test0_plain)
+	Z, err := gollazo.Decrypt("84581248O6096095854123337", private_key)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(Z)
 
-	// encrypt
-	fmt.Println(gollazo.Encrypt("Test", private_key))
 }
