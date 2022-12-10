@@ -63,6 +63,9 @@ func Decrypt(cipher string, private_key []int) (string, error) {
 	}
 
 	B_arr, err := splitBtoStrArray(B)
+	if err != nil {
+		return " ", err
+	}
 
 	fmt.Printf("%d\t%v\t%v\n", U, A_arr, B_arr)
 
@@ -154,6 +157,11 @@ func CheckCipher(cipher string) (int, string, string, error) {
 				return U, A, B, nil
 			}
 
+			// iterate through the string from the first byte.
+			// If the leading byte indicates a triplet (O or 9), check that the next two bytes are decimal,
+			// and move forward 3 bytes to the next leading byte.
+			// If the leading byte indicates a doubled (0-8), check that the next two byte is decimal,
+			// and move forward w bytes to the next leading byte.
 			if (string(B[i]) == "O") || (string(B[i]) == "9") {
 				if !(strings.Contains(str_of_valid_digits, string(B[i+1])) && strings.Contains(str_of_valid_digits, string(B[i+2]))) {
 					l_u++
@@ -168,14 +176,12 @@ func CheckCipher(cipher string) (int, string, string, error) {
 			} else {
 				i += 2
 			}
-
 		}
-
 	}
-
 }
 
-// splitAtoIntArray
+// splitAtoIntArray takes a string of integers and returns an integer array
+// with each byte of the string assigned to each entry of the array.
 func splitAtoIntArray(A string) ([]int, error) {
 	var A_arr []int
 	var A_int int
@@ -192,33 +198,36 @@ func splitAtoIntArray(A string) ([]int, error) {
 	return A_arr, nil
 }
 
+// splitBtoStrArray takes a Collazo B string and returns an array of
+// doublet and triplet strings.
+// IMPORTANT: this function does not do any checking and works on the
+// assumption that B has been returned by CheckCipher (i.e. that is a
+// valid Collazo string). This is to avoid repeated logic.
 func splitBtoStrArray(B string) ([]string, error) {
-	B_split := []string{"84", "58", "12", "48", "O60", "960", "958"}
-	return B_split, nil
-}
 
-/*
-func convertAB2Plain(A string, B string, private_key []int) string {
+	var B_arr []string
+	var l_b int = len(B)
 
-	// split the strings up into arrays
-	A_split := splitAtoIntArray(A)
-	B_split := splitBtoStrArray(B)
+	// loop through the B string, identifying doublets and triplets
+	// and assign them to new array
+	i := 0
+	for {
 
-	// decrypt each AB pair one by one
-	// e.g. A=5 B="84" -> "XXIII" -> "W" with example key
-	var plaintext string = ""
-	var B_split_roman []string
+		// if we have got this far then the B string
+		// is consistent with a Collazo cipher
+		if i == l_b {
+			return B_arr, nil
+		}
 
-	for i := 0; i < len(A_split); i++ {
-		decrypted_roman := translateAB2Roman(A_split[i], B_split[i], private_key)
-		B_split_roman = append(B_split_roman, decrypted_roman)
-		plaintext += roman_2_letter[decrypted_roman]
+		// extract each term (2 bytes standard, 3 bytes if
+		// triplet indicated by O or 9)
+		if (string(B[i]) == "O") || (string(B[i]) == "9") {
+			B_arr = append(B_arr, B[i:i+3])
+			i += 3
+			continue
+		} else {
+			B_arr = append(B_arr, B[i:i+2])
+			i += 2
+		}
 	}
-
-	return plaintext
 }
-
-func translateAB2Roman(num_numerals int, sum_decimal string, private_key []int) string {
-	return "XXIII"
-}
-*/

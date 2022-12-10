@@ -122,3 +122,34 @@ func Test_splitAtoIntArray(t *testing.T) {
 		})
 	}
 }
+
+func Test_splitBtoStrArray(t *testing.T) {
+	type args struct {
+		B string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		{
+			name:    "Check against given example",
+			args:    args{"84581248O60960958"},
+			want:    []string{"84", "58", "12", "48", "O60", "960", "958"},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := splitBtoStrArray(tt.args.B)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("splitBtoStrArray() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("splitBtoStrArray() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -17,13 +17,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("U = %d\tA = %s\tB = %s\terr = %v\n", num, A, B, err)
 
 	// decrypt
-	Z, err := gollazo.Decrypt("84581248O6096095854123337", private_key)
+	plaintext, err := gollazo.Decrypt("84581248O6096095854123337", private_key)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(Z)
+	fmt.Println(plaintext)
 
 }
