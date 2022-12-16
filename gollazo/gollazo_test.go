@@ -153,3 +153,134 @@ func Test_splitBtoStrArray(t *testing.T) {
 		})
 	}
 }
+
+func Test_sumIntArray(t *testing.T) {
+	type args struct {
+		int_arr []int
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			name: "Check against simple example",
+			args: args{[]int{1, 2, 3, 4, 5, 6, 7, 8, 9}},
+			want: 45,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sumIntArray(tt.args.int_arr); got != tt.want {
+				t.Errorf("sumIntArray() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_translateABPair2Plaintext(t *testing.T) {
+	type args struct {
+		A_elem      int
+		B_elem      string
+		private_key []int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "Check against given example character 1",
+			args:    args{5, "84", []int{24, 22, 12}},
+			want:    "W",
+			wantErr: false,
+		},
+		{
+			name:    "Check against given example character 2",
+			args:    args{4, "58", []int{24, 22, 12}},
+			want:    "H",
+			wantErr: false,
+		},
+		{
+			name:    "Check against given example character 3",
+			args:    args{1, "12", []int{24, 22, 12}},
+			want:    "A",
+			wantErr: false,
+		},
+		{
+			name:    "Check against given example character 4",
+			args:    args{2, "48", []int{24, 22, 12}},
+			want:    "T",
+			wantErr: false,
+		},
+		{
+			name:    "Check against given example character 5",
+			args:    args{3, "O60", []int{24, 22, 12}},
+			want:    "S",
+			wantErr: false,
+		},
+		{
+			name:    "Check against given example character 6",
+			args:    args{3, "960", []int{24, 22, 12}},
+			want:    "U",
+			wantErr: false,
+		},
+		{
+			name:    "Check against given example character 7",
+			args:    args{3, "958", []int{24, 22, 12}},
+			want:    "P",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := translateABPair2Plaintext(tt.args.A_elem, tt.args.B_elem, tt.args.private_key)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("translateABPair2Plaintext() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("translateABPair2Plaintext() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_sumElementwiseProduct(t *testing.T) {
+	type args struct {
+		int_arr     []int
+		private_key []int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int
+		wantErr bool
+	}{
+		{
+			name:    "Toy example",
+			args:    args{[]int{1, 2, 3}, []int{1, 2, 3}},
+			want:    14,
+			wantErr: false,
+		},
+		{
+			name:    "Toy example error",
+			args:    args{[]int{1, 2, 3, 4}, []int{1, 2, 3}},
+			want:    -1,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := sumElementwiseProduct(tt.args.int_arr, tt.args.private_key)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("sumElementwiseProduct() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("sumElementwiseProduct() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

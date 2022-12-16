@@ -2,13 +2,12 @@ package gollazo
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
 )
 
-// using map literals
+// map roman numerals to the alphabet
 var roman_2_letter = map[string]string{
 	"I":     "A",
 	"II":    "B",
@@ -38,6 +37,13 @@ var roman_2_letter = map[string]string{
 	"XXVI":  "Z",
 }
 
+// the Roman numerals used for the encoding
+var roman_characters_str_array = []string{
+	"X",
+	"V",
+	"I",
+}
+
 var str_of_valid_digits string = "012345678"  // note 9 is excluded as it indicates higher Roman numeral value
 var str_of_valid_bytes string = "0123456789O" // the full set of allowed bytes
 
@@ -52,24 +58,40 @@ var str_of_valid_bytes string = "0123456789O" // the full set of allowed bytes
 // The function will use the length of the key to map to roman numerals.
 func Decrypt(cipher string, private_key []int) (string, error) {
 
+	var plaintext string
+	var plainbyte string
+
+	// do an initial check whether the passed cipher looks like
+	// a Collazo cipher. If it is, identify the A and B strings
 	U, A, B, err := CheckCipher(cipher)
 	if err != nil {
 		return " ", err
 	}
 
+	// split the A string into an array of integers.
 	A_arr, err := splitAtoIntArray(A)
 	if err != nil {
 		return " ", err
 	}
 
+	// split the B string into an array of strings
+	// (in order to retain higher/lower term)
 	B_arr, err := splitBtoStrArray(B)
 	if err != nil {
 		return " ", err
 	}
 
-	fmt.Printf("%d\t%v\t%v\n", U, A_arr, B_arr)
+	// iterate through the arrays to find the corresponding
+	// Roman numeral reputation (and there for the plaintext)
+	for i := 0; i < U; i++ {
+		plainbyte, err = translateABPair2Plaintext(A_arr[i], B_arr[i], private_key)
+		plaintext = plaintext + plainbyte
+	}
+	if err != nil {
+		return " ", err
+	}
 
-	return " ", nil
+	return plaintext, nil
 }
 
 // Encrypt takes a plain text string (plaintext) and a private key (array of integers) and produces
@@ -230,4 +252,119 @@ func splitBtoStrArray(B string) ([]string, error) {
 			i += 2
 		}
 	}
+}
+
+// translateABPair2Plaintext takes an integer, A_elem, returns the plaintext character encoded
+// by a AB pair in a Collazo cipher.
+// A_elem: number of roman numerals required to express B_elem
+// B_elem: numer expressed as string. If leng(B_elem) == 3: "O" or "9" indicates lower/upper
+func translateABPair2Plaintext(A_elem int, B_elem string, private_key []int) (string, error) {
+
+	// variables
+	var B_int int
+	var triplet_flag bool = false
+	var key_length int = len(private_key)
+	var roman_numeral_arr []int
+	var roman_representation string = ""
+
+	// parse B_elem to flag and integer value
+	// set a flag if it is a triplet
+	if (string(B_elem[0]) == "O") || (string(B_elem[0]) == "9") {
+		triplet_flag = true
+		B_int, _ = strconv.Atoi(B_elem[1:3])
+	} else {
+		B_int, _ = strconv.Atoi(B_elem[0:2])
+	}
+
+	//
+
+	// initialise the array to zeros
+	for i := 0; i < key_length; i++ {
+		roman_numeral_arr = append(roman_numeral_arr, 0)
+	}
+
+	// recursively iterate over all of the possible combinations with the
+	// correct length (brute force). Note that roman numeral array is passed
+	// as a pointer and is therefor modified by the function.
+	solution_found := findRomanRecursion(A_elem, B_int, roman_numeral_arr, private_key, key_length)
+	if solution_found != true {
+		return " ", errors.New("gollazo.translateABPair2Plaintext: Not a Collazo cipher. Couldn't find Roman suitable numeral representation")
+	}
+
+	// construct the string repr. of the found Roman numeral
+	for i := 0; i < key_length; i++ {
+		roman_representation = roman_representation + strings.Repeat(roman_characters_str_array[i], roman_numeral_arr[i])
+	}
+
+	// account for the triplet higher/lower indicator
+	roman_representation_length := len(roman_representation)
+	if triplet_flag && (string(B_elem[0]) == "O") {
+		roman_representation = roman_representation[:roman_representation_length-2] +
+			roman_representation[roman_representation_length-1:roman_representation_length] +
+			roman_representation[roman_representation_length-2:roman_representation_length-1]
+	}
+
+	return roman_2_letter[roman_representation], nil
+}
+
+// sumIntArray takes an array of integers as input and returns the
+// sum of all elements
+func sumIntArray(int_arr []int) int {
+	var sum int
+	for i := 0; i < len(int_arr); i++ {
+		sum = sum + int_arr[i]
+	}
+	return sum
+}
+
+// sumElementwiseProduct takes two integer arrays, and returns the the sum
+// of the products of each pair of  corresponding elements.
+func sumElementwiseProduct(int_arr []int, private_key []int) (int, error) {
+	var sum int
+
+	if len(int_arr) != len(private_key) {
+		return -1, errors.New("gollazo.sumElementwiseProduct: Passed arrays must have equal length")
+	}
+
+	for i := 0; i < len(int_arr); i++ {
+		sum = sum + int_arr[i]*private_key[i]
+	}
+	return sum, nil
+}
+
+// findRomanRecursion performs a brute force recursive search through plausible combinations
+// of the private key. Note that the cipher doesn't use a proper roman numeral system
+// (i.e. it doesn't use "IV" or "IX" etc as bases; this type of Roman base is only used
+// via the "O" string indicating that the final two terms should be switched).
+func findRomanRecursion(A_elem int, B_elem int, roman_numeral []int, private_key []int, depth int) bool {
+
+	// the roman_numeral int array is holding the number of each numeral.
+	// e.g. [2,1,2] would mean 2 "X"s, 1 "V", and 2 "I"s, i.e. "XXVII"
+
+	// A_elem sets an upper limit as once any individual character has
+	// more than A_elem (the number of characters required) then there is
+	// no need to search.
+	for i := 0; i <= A_elem; i++ {
+
+		roman_numeral[len(roman_numeral)-depth] = i
+		if depth > 1 {
+			solution_found := findRomanRecursion(A_elem, B_elem, roman_numeral, private_key, depth-1)
+			if solution_found {
+				return true
+			}
+		} else {
+			num_numerals := sumIntArray(roman_numeral)
+			sum_total, _ := sumElementwiseProduct(roman_numeral, private_key)
+
+			if num_numerals < A_elem {
+				continue
+			} else if num_numerals > A_elem {
+				break
+			} else if (sum_total == B_elem) && (num_numerals == A_elem) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
